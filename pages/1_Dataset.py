@@ -30,7 +30,7 @@ st.markdown('''
     \nThis is an example of data that is added into the feature list.
 
 ''')
-feat_path = Path(__file__).parent / "song_feature_data.pkl"
+feat_path = Path(__file__).resolve().parents[1] / "song_feature_data.pkl"
 #with open("/Users/rachelfox/Downloads/song_feature_data.pkl", "rb") as f:
 with open(feat_path, "rb") as f:
     reference_data = pickle.load(f)
@@ -44,7 +44,7 @@ st.markdown('''
             
 ''')
 
-summ_path = Path(__file__).parent / "song_summary_data.pkl"
+summ_path = Path(__file__).resolve().parents[1] / "song_summary_data.pkl"
 #with open("/Users/rachelfox/Downloads/song_summary_data.pkl", "rb") as f:
 with open(summ_path, "rb") as f:
     summary_df = pickle.load(f)

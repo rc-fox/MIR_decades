@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # conda activate /Users/rachelfox/opt/anaconda3/envs/medsam
-# streamlit run Downloads/MusicWebApp/'Musicology 188 Site'.py
+# streamlit run /Users/rachelfox/MIR_decades/'Musicology 188 Site'.py
 
 ### functions
 # MIR pipeline

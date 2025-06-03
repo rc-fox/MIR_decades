@@ -19,8 +19,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# conda activate /Users/rachelfox/opt/anaconda3/envs/medsam
-# streamlit run Downloads/musicwebapp.py
+# This page is the user input and comparison of their song to the dataset atttributes, this also contains the code for generating the data for the dataset seen on the other page
 
 ### functions
 # MIR pipeline
@@ -33,17 +32,14 @@ st.markdown('''
             
     Now it's your turn! Upload a mp3 file and we will create a dynamic analysis of your song mixed with our dataset. Please have the song input as decade - songname (example: 1980s - Back In Black).
     \nThis page will take the uploaded song of your choice and compute all of the features and summary features dictating rhythmic complexity, harmony, and structure. After displaying the results, the analysis between this song and the 1980s and 2000s dataset is conducted. The metric used is the difference between each summary feature for the new song and the mean for that feature for each of the 1980s and 2010s. Users will be able to see which time period the given song is most similar to for each summary feature, outputted as text on this page. 
-    \nIf the inputted song is from either of the decades of interest, then the data from this song will be integrated into the total dataset that will be uploaded into the site. Upon refreshing the page, the number of songs in the dataset will increase and the graphs and statistics will change to reflect the input of the user-inputted song. This allows for a continued updating of the website, so that the statistics can become more accurate as users contribute data to the dynamic feature set.
             
 ''')
 
 feat_path = Path(__file__).resolve().parents[1] / "song_feature_data.pkl"
-#with open("/Users/rachelfox/Downloads/song_feature_data.pkl", "rb") as f:
 with open(feat_path, "rb") as f:    
     reference_data = pickle.load(f)
 
 summ_path = Path(__file__).resolve().parents[1] / "song_summary_data.pkl"
-#with open("/Users/rachelfox/Downloads/song_summary_data.pkl", "rb") as f:
 with open(summ_path, "rb") as f:    
     summary_df = pickle.load(f)
     
@@ -66,7 +62,6 @@ def get_best_key(chroma_segment):
                           2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
     MINOR_PROFILE = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53,
                           2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
-    # Get best key (better than just raw max)
     notes = ['C', 'C#', 'D', 'Eb', 'E', 'F', 
             'F#', 'G', 'Ab', 'A', 'Bb', 'B']
     scores = []
@@ -80,7 +75,7 @@ def get_best_key(chroma_segment):
     best = max(scores, key=lambda x: x[0])
     return best  # (correlation, mode, root)
 
-
+# get presence of key change
 def window_key_change(chroma, threshold=0.7):
     keychange = 0
     time_step = librosa.time_to_frames(30)
@@ -113,6 +108,7 @@ def window_key_change(chroma, threshold=0.7):
     print("Overall key ", overallkey)
     return overallkey, keychange
 
+# get sections
 def assign_section_labels(chroma, bounds, threshold=0.85):
     segment_feats = []
     for i in range(len(bounds) - 1):
@@ -142,7 +138,7 @@ def assign_section_labels(chroma, bounds, threshold=0.85):
     return labels
 
 
-# get sections based on power spectrum
+# get bounds for sections based on power spectrum
 def get_bounds(y, sr):
     chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
     X = chroma.T
@@ -169,7 +165,7 @@ def get_bounds(y, sr):
     print("Sections ", best_k)
     return bound_times, best_k
 
-import tempfile
+# get chords using librosa
 # Define templates for major and minor chords (root position only)
 CHORD_TEMPLATES = {}
 pitches = ['C', 'C#', 'D', 'D#', 'E', 'F',
@@ -182,21 +178,18 @@ for i, pitch in enumerate(pitches):
     CHORD_TEMPLATES[f"{pitch}:maj"] = np.roll(major_template, i)
     CHORD_TEMPLATES[f"{pitch}:min"] = np.roll(minor_template, i)
 
-def cosine_similarity(a, b):
+def cosine_sim(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 def estimate_chord(chroma_vector):
     scores = {
-        name: cosine_similarity(chroma_vector, template)
-        for name, template in CHORD_TEMPLATES.items()
+        name: cosine_sim(chroma_vector, template) for name, template in CHORD_TEMPLATES.items()
     }
     return max(scores, key=scores.get)
 
-def getchords(tmp_mp3_path):
-    y, sr = librosa.load(tmp_mp3_path, sr=44100, mono=True)
-
+def getchords(y, sr):
     # Compute chroma
-    hop_length = 44100 
+    hop_length = 11025
     chroma = librosa.feature.chroma_cqt(y=y, sr=sr, hop_length=hop_length)
     times = librosa.frames_to_time(np.arange(chroma.shape[1]), sr=sr, hop_length=hop_length)
 
@@ -224,7 +217,6 @@ def getchords(tmp_mp3_path):
             start_time = current_time
             prev_chord = current_chord
 
-    # Append final chord segment
     start_times.append(start_time)
     end_times.append(times[-1])
     chord_names.append(prev_chord)
@@ -234,33 +226,34 @@ def getchords(tmp_mp3_path):
 
     return length_of_chord, chord_names
 
-
+# create summary features data frame
 def summarize_features(row):
     chroma = row["Chroma"]
     
-    # Harmony: how evenly energy is distributed across 12 chroma bins
+    # Chromagram Entropy: how evenly energy is distributed across 12 chroma bins
     chroma_entropy = -np.sum((chroma.mean(axis=1) + 1e-6) * np.log(chroma.mean(axis=1) + 1e-6))
     
-    # Rhythm/Tempo: use raw tempo and number of sections
+    # Rhythmic complexity: use raw tempo and number of sections
     rhythmic_complexity = row["Tempo"] * row["Segments"]
     
     # Key stability: fewer key changes = more stable
     key_stability = 1 / (1 + row["Number Key Change"])
     
-    # Structural complexity: std deviation of section lengths
+    # Structural variability: std deviation of section lengths
     structural_variability = np.std(row["Section Lengths"])
 
+    # Harmonic variety: unique chords
     # Harmonic complexity: how many unique chords and how frequently they change
     unique_chords = len(set(row["Chord Names"]))
     harmonic_change_rate = len(row["Chord Names"]) / sum(row["Chord Lengths"])  # chords per second
 
-    # Harmonic variety: entropy over chord distribution
+    # Harmonic entropy: entropy over chord distribution
     from collections import Counter
     chord_counts = np.array(list(Counter(row["Chord Names"]).values()))
     chord_probs = chord_counts / chord_counts.sum()
     harmonic_entropy = -np.sum(chord_probs * np.log(chord_probs + 1e-6))
 
-    # Harmonic character: major/minor - all major is 1, all minor is 0
+    # Major character: major/minor - all major is 1, all minor is 0
     ismaj=0
     for x in range(0, len(row['Chord Names'])):
         ismaj += (row["Chord Names"][x][-3:] == "maj")
@@ -280,7 +273,7 @@ def summarize_features(row):
 
 
 
-
+# Upload song from user and complete analysis and graph
 uploaded_file = st.file_uploader("Upload an MP3 file", type=["mp3"])
 import os
 
@@ -310,7 +303,7 @@ if uploaded_file is not None:
         keychanges.append(keychange)
         num_sections.append(numsect)
         section_lengths.append([boundar[k]-boundar[k-1] for k in range(1, boundar.size)])
-        chord_length, chord_name = getchords(uploaded_file)
+        chord_length, chord_name = getchords(y, sr)
         chord_lengths.append(chord_length)
         chord_names.append(chord_name)
     st.success("Processing complete!")
@@ -343,15 +336,10 @@ if uploaded_file is not None:
     min_vals = summary_df[feature_cols].min()
     max_vals = summary_df[feature_cols].max()
     data_indiv = (data_indiv[feature_cols] - min_vals) / (max_vals - min_vals)
-    #data_indiv = data_indiv.clip(0, 1)
 
     data_indiv["Decade"] = summary_df_indiv["Decade"]
     data_indiv["Song"] = summary_df_indiv["Song Name"]
     df_long_indiv = pd.melt(data_indiv, id_vars=["Song", "Decade"], var_name="Feature", value_name="Value")
-
-    #st.write("Summary DF shape:", summary_df_indiv.shape)
-    #st.write("Data shape:", data_indiv.shape)
-    #st.write("Melted DataFrame (df_long_indiv):", df_long_indiv)
 
     fig, ax = plt.subplots()
     p = sns.catplot(data=df_long_indiv, x="Feature", y="Value", kind="bar", hue="Decade", palette="Set2")
@@ -364,6 +352,7 @@ if uploaded_file is not None:
     st.markdown('''How does this compare to what we already have?
                 ''')
 
+    # compare new measures with existing dataset measures
     for measure in feature_cols:
         g1 = np.mean(summary_df_indiv[measure].values)
         g2 = np.mean(summary_df[summary_df["Decade"] == "1980s"][measure].values)
@@ -375,16 +364,17 @@ if uploaded_file is not None:
         message1 = f"{measure}: {g1-g2:.2f} units ({(g1-g2)/g2*100:.2f}%) different than our 1980s dataset and {g1-g3:.2f} units ({(g1-g3)/g3*100:.2f}%) different than our 2010s dataset"
         st.markdown(message1)
 
-        if (g1-g2) > (g1-g3):
+        if abs(g1-g2) > abs(g1-g3):
             message2 = f"{measure} for this inputted song is more similar to the 2010s dataset."
             st.markdown(message2)
         else:
             message2 = f"{measure} for this inputted song is more similar to the 1980s dataset."
             st.markdown(message2)
 
-
+    # if you want to add to the data frame of songs
     #if data_indiv.loc[0, "Decade"] == "1980s" or data_indiv.loc[0, "Decade"] == "2010s":
-    #    summary_df_updated = pd.concat([summary_df, summary_df_indiv], axis=0)
-    #    with open("/Users/rachelfox/Downloads/song_summary_data.pkl", "wb") as f:
+    #    summary_df_updated = pd.concat([summary_df, summary_df_indiv], axis=0).reset_index()
+    #     summ_path = Path(__file__).resolve().parents[1] / "song_summary_data.pkl"
+    #    with open(summ_path, "wb") as f:
     #        pickle.dump(summary_df_updated, f)
     #    st.markdown("This song has now been added to our dataset since it was from one of our decades of interest!")

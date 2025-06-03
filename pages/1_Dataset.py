@@ -19,6 +19,8 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# This is the data set page that includes sample data and PCA analysis
+
 st.set_page_config(page_title="Dataset")
 st.title("Dataset")
 
@@ -26,16 +28,24 @@ st.markdown('''
     
     In this dataset, I inputted songs into Python using the library librosa and from there I was able to perform audio processing. The dataset for these songs were chosen from the list of Billboard top mainstream rock songs for each year in the timespans of 1980-1989 and 2010-2019. From the list of these top songs, I chose the songs that were listed as number one for at least 5 weeks. 
     \nFeatures collected were tempo, chromagram, key, presence of key change, sections, and chords. Each of these represents different aspects of music, including rhythm, harmony, and song structure.
-    From each of these features, I generated summarized features of chroma entropy, rhythmic complexity, key stability, structural variability, harmonic variety, harmonic change rate, harmonic entropy, and major character.  Chroma entropy describes how evenly energy is distributed among the 12 chroma bins, which is calculated as the sum times the log of the mean chroma. Rhythmic complexity multiplies raw tempo and number of segments, key stability is 1 divided by the number of key changes where fewer key changes is more stable, and structural variability is the standard deviation of the section lengths. Harmonic variety measures entropy over the chord distribution, which takes the negative sum of the chord probabilities times the log of the chord probabilities. Harmonic character is between 0 and 1 for whether the segment keys are 1, all major or 0, all minor. These features are concatenated into a summary data frame for graphing and analysis. 
+    From each of these features, I generated summarized features of chroma entropy, rhythmic complexity, key stability, structural variability, harmonic variety, harmonic change rate, harmonic entropy, and major character. These features are concatenated into a summary data frame for graphing and analysis.   
+    
+    \nChroma entropy describes how evenly energy is distributed among the 12 chroma bins, which is calculated as the sum times the log of the mean chroma. 
+    \nRhythmic complexity multiplies raw tempo and number of segments.
+    \nKey stability is 1 divided by the number of key changes where fewer key changes is more stable. 
+    \nStructural variability is the standard deviation of the section lengths. 
+    \nHarmonic variety measures the number of unique chords that occur throughout the song.
+    \nHarmonic change rate is the number of chords per second.
+    \nHarmonic entropy measures entropy over the chord distribution, which takes the negative sum of the proportion of the chord occurrence times the log of the chord occurrence proportion. 
+    \nMajor character is between 0 and 1 for whether the segment keys are 1, all major or 0, all minor.      
+            
     \nThis is an example of data that is added into the feature list.
 
 ''')
 feat_path = Path(__file__).resolve().parents[1] / "song_feature_data.pkl"
-#with open("/Users/rachelfox/Downloads/song_feature_data.pkl", "rb") as f:
 with open(feat_path, "rb") as f:
     reference_data = pickle.load(f)
 print(type(reference_data))
-#st.dataframe(reference_data.head(10))
 st.dataframe(reference_data.sample(n=10))
 
 st.markdown('''
@@ -45,10 +55,8 @@ st.markdown('''
 ''')
 
 summ_path = Path(__file__).resolve().parents[1] / "song_summary_data.pkl"
-#with open("/Users/rachelfox/Downloads/song_summary_data.pkl", "rb") as f:
 with open(summ_path, "rb") as f:
     summary_df = pickle.load(f)
-#st.dataframe(summary_df.head(10))
 st.dataframe(summary_df.sample(n=10))
 st.markdown(f"There are currently {summary_df.shape[0]} songs in this dataset.")
 

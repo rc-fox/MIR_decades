@@ -19,12 +19,7 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# conda activate /Users/rachelfox/opt/anaconda3/envs/medsam
-# streamlit run /Users/rachelfox/MIR_decades/'Musicology 188 Site'.py
-
-### functions
-# MIR pipeline
-# functions for the music information retrieval analysis where different songs can be inputted
+# This is the introduction page for the web app
 
 st.set_page_config(page_title="About")
 

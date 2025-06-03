@@ -18,6 +18,9 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.stats import ttest_ind
+from sklearn.preprocessing import MinMaxScaler
+# This is the Statistics page that includes graphs and statistics for the summary data
 
 st.set_page_config(page_title="Statistics")
 st.title("Statistics")
@@ -30,17 +33,16 @@ st.markdown('''
 ''')
 
 feat_path = Path(__file__).resolve().parents[1] / "song_feature_data.pkl"
-#with open("/Users/rachelfox/Downloads/song_feature_data.pkl", "rb") as f:
 with open(feat_path, "rb") as f:
     reference_data = pickle.load(f)
 
 summ_path = Path(__file__).resolve().parents[1] / "song_summary_data.pkl"
-#with open("/Users/rachelfox/Downloads/song_summary_data.pkl", "rb") as f:
 with open(summ_path, "rb") as f:
     summary_df = pickle.load(f)
 
+# plot polar plots
 def plot_multiple_fingerprints(df):
-    features = ["Chroma Entropy", "Key Stability", "Structural Variability", "Harmonic Variety", "Harmonic Change Rate", "Harmonic Entropy", "Major Character"]
+    features = ["Chroma Entropy", "Rhythmic Complexity", "Key Stability", "Structural Variability", "Harmonic Variety", "Harmonic Change Rate", "Harmonic Entropy", "Major Character"]
     angles = np.linspace(0, 2 * np.pi, len(features), endpoint=False).tolist()
     angles += angles[:1]
 
@@ -51,7 +53,7 @@ def plot_multiple_fingerprints(df):
     for i in range(0, len(df)):
         row = df.iloc[i]
         values = [row[f] for f in features] 
-        values = [values[i]/maxes[i] for i in range(len(values))] # normalize for better visualization
+        values = [values[i]/maxes[i] for i in range(len(values))]
         values += values[:1]
         random_number = np.random.randint(0, 16777215)
         hex_number = str(hex(random_number))
@@ -76,8 +78,6 @@ st.markdown('''
 plot_multiple_fingerprints(summary_df.loc[summary_df["Decade"]=="1980s", :])
 plot_multiple_fingerprints(summary_df.loc[summary_df["Decade"]=="2010s", :])
 
-from scipy.stats import ttest_ind
-from sklearn.preprocessing import MinMaxScaler
 
 st.markdown('''
             
@@ -85,6 +85,7 @@ st.markdown('''
             
 ''')
 
+# plot bar graph
 def plot_song_feature_bars(df, feature_cols, normalize=True):
     # Normalize features (0-1 scale)
     data = df.loc[:, feature_cols]

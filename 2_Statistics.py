@@ -10,7 +10,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import silhouette_score
 from sklearn.manifold import SpectralEmbedding
-#from madmom.features.chords import CNNChordFeatureProcessor, CRFChordRecognitionProcessor
 import soundfile as sf
 from collections import Counter
 import string

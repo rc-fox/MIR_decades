@@ -30,10 +30,14 @@ st.markdown('''
     For rock songs, it is common for there to be one time signature throughout the piece and for the key to stay stable or change relatively few times, as compared to genres such as classical music. Listeners are able to hear a lot of these features such as a key change and experienced musicians or listeners could also identify section breaks in a song. However, identifying specific sub-key changes or chord changes can be challenging to identify and statistically differentiate. This analysis shows the results of the computational comparison of these features between the two time periods of interest.
 ''')
 
-with open("/Users/rachelfox/Downloads/song_feature_data.pkl", "rb") as f:
+feat_path = Path(__file__).parent / "features.pkl"
+#with open("/Users/rachelfox/Downloads/song_feature_data.pkl", "rb") as f:
+with open(feat_path, "rb") as f:
     reference_data = pickle.load(f)
 
-with open("/Users/rachelfox/Downloads/song_summary_data.pkl", "rb") as f:
+summ_path = Path(__file__).parent / "summary_features.pkl"
+#with open("/Users/rachelfox/Downloads/song_summary_data.pkl", "rb") as f:
+with open(summ_path, "rb") as f:
     summary_df = pickle.load(f)
 
 def plot_multiple_fingerprints(df):

@@ -350,8 +350,8 @@ if uploaded_file is not None:
             st.markdown(message2)
 
 
-    if data_indiv.loc[0, "Decade"] == "1980s" or data_indiv.loc[0, "Decade"] == "2010s":
+    """if data_indiv.loc[0, "Decade"] == "1980s" or data_indiv.loc[0, "Decade"] == "2010s":
         summary_df_updated = pd.concat([summary_df, summary_df_indiv], axis=0)
         with open("/Users/rachelfox/Downloads/song_summary_data.pkl", "wb") as f:
             pickle.dump(summary_df_updated, f)
-        st.markdown("This song has now been added to our dataset since it was from one of our decades of interest!")
+        st.markdown("This song has now been added to our dataset since it was from one of our decades of interest!")"""

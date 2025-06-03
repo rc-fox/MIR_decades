@@ -10,7 +10,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import silhouette_score
 from sklearn.manifold import SpectralEmbedding
-from madmom.features.chords import CNNChordFeatureProcessor, CRFChordRecognitionProcessor
+#from madmom.features.chords import CNNChordFeatureProcessor, CRFChordRecognitionProcessor
 import soundfile as sf
 from collections import Counter
 import string
@@ -167,40 +167,70 @@ def get_bounds(y, sr):
     return bound_times, best_k
 
 import tempfile
-def getchords(file):
-    # Get chord activations using a CNN
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_mp3:
-        tmp_mp3.write(uploaded_file.getbuffer())
-        tmp_mp3_path = tmp_mp3.name
+# Define templates for major and minor chords (root position only)
+CHORD_TEMPLATES = {}
+pitches = ['C', 'C#', 'D', 'D#', 'E', 'F',
+           'F#', 'G', 'G#', 'A', 'A#', 'B']
 
+major_template = np.array([1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0])
+minor_template = np.array([1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0])
+
+for i, pitch in enumerate(pitches):
+    CHORD_TEMPLATES[f"{pitch}:maj"] = np.roll(major_template, i)
+    CHORD_TEMPLATES[f"{pitch}:min"] = np.roll(minor_template, i)
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+def estimate_chord(chroma_vector):
+    scores = {
+        name: cosine_similarity(chroma_vector, template)
+        for name, template in CHORD_TEMPLATES.items()
+    }
+    return max(scores, key=scores.get)
+
+def getchords(tmp_mp3_path):
     y, sr = librosa.load(tmp_mp3_path, sr=44100, mono=True)
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_wav:
-        wav_path = tmp_wav.name
-        sf.write(wav_path, y, sr)
+    # Compute chroma
+    hop_length = 44100 
+    chroma = librosa.feature.chroma_cqt(y=y, sr=sr, hop_length=hop_length)
+    times = librosa.frames_to_time(np.arange(chroma.shape[1]), sr=sr, hop_length=hop_length)
 
-    proc = CNNChordFeatureProcessor()
-    activations = proc(wav_path)
+    # Estimate chord at each time frame
+    chords = []
+    for i in range(chroma.shape[1]):
+        chord = estimate_chord(chroma[:, i])
+        chords.append((times[i], chord))
 
-    # Decode activations into chord labels using CRF
-    crf = CRFChordRecognitionProcessor()
-    chords = crf(activations)
-
-    # chords is a list of [start_time, end_time, chord_label]
+    # Group consecutive identical chords
     start_times = []
     end_times = []
     chord_names = []
-    for chord in chords:
-        print(f"{chord[0]:.2f}–{chord[1]:.2f} sec: {chord[2]}")
-        if chord[2] != "N":
-            start_times.append(chord[0])
-            end_times.append(chord[1])
-            chord_names.append(chord[2])
 
-    length_of_chord = np.subtract(end_times,start_times)
-    length_of_chord = [round(x, 2) for x in length_of_chord]
+    prev_chord = chords[0][1]
+    start_time = chords[0][0]
+    for i in range(1, len(chords)):
+        current_chord = chords[i][1]
+        current_time = chords[i][0]
+        if current_chord != prev_chord:
+            end_time = current_time
+            start_times.append(start_time)
+            end_times.append(end_time)
+            chord_names.append(prev_chord)
+            start_time = current_time
+            prev_chord = current_chord
+
+    # Append final chord segment
+    start_times.append(start_time)
+    end_times.append(times[-1])
+    chord_names.append(prev_chord)
+
+    # Calculate durations
+    length_of_chord = np.round(np.subtract(end_times, start_times), 2)
 
     return length_of_chord, chord_names
+
 
 def summarize_features(row):
     chroma = row["Chroma"]
@@ -350,8 +380,8 @@ if uploaded_file is not None:
             st.markdown(message2)
 
 
-    """if data_indiv.loc[0, "Decade"] == "1980s" or data_indiv.loc[0, "Decade"] == "2010s":
-        summary_df_updated = pd.concat([summary_df, summary_df_indiv], axis=0)
-        with open("/Users/rachelfox/Downloads/song_summary_data.pkl", "wb") as f:
-            pickle.dump(summary_df_updated, f)
-        st.markdown("This song has now been added to our dataset since it was from one of our decades of interest!")"""
+    #if data_indiv.loc[0, "Decade"] == "1980s" or data_indiv.loc[0, "Decade"] == "2010s":
+    #    summary_df_updated = pd.concat([summary_df, summary_df_indiv], axis=0)
+    #    with open("/Users/rachelfox/Downloads/song_summary_data.pkl", "wb") as f:
+    #        pickle.dump(summary_df_updated, f)
+    #    st.markdown("This song has now been added to our dataset since it was from one of our decades of interest!")

@@ -1,4 +1,4 @@
-Python==3.10.15
+python_version == "3.10.15"
 streamlit==1.45.0
 numpy==1.26.4
 scipy==1.14.1

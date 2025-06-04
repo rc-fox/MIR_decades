@@ -333,6 +333,14 @@ if uploaded_file is not None:
     scaler = MinMaxScaler()
     scaler.fit(summary_df[feature_cols])  # summary df is the full dataset
 
+    st.markdown('''This is what the individual features look like
+                ''')
+    st.dataframe(featuredf_indiv[["Decade", "Song Name", "Tempo", "Key", "Number Key Change", "Segments", "Section Lengths", "Chord Lengths", "Chord Names"]])
+
+    st.markdown('''This is what the summary features look like
+                ''')
+    st.dataframe(summary_df_indiv[feature_cols])
+
     min_vals = summary_df[feature_cols].min()
     max_vals = summary_df[feature_cols].max()
     data_indiv = (data_indiv[feature_cols] - min_vals) / (max_vals - min_vals)
